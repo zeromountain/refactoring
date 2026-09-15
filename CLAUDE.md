@@ -6,17 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A plugin containing one skill, `refactoring`, at `skills/refactoring/`. It encodes Martin Fowler's
 *Refactoring* (2nd ed.; Korean translation 『리팩터링 2판』, 한빛미디어) so an agent can refactor code the way the
-book prescribes. There is no application code, build, lint, or test suite — the deliverable is the Markdown itself.
+book prescribes. There is no application code or build — the deliverable is the Markdown itself. `scripts/check.sh`
+is the only static check (see Invariants) and `evals/` the only behavioral one.
 
 The repo root is simultaneously the plugin root and a marketplace for both Claude Code and Codex:
 
 - `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json` (marketplace `zeromountain`, plugin source `./`)
 - `plugin.json` (Agent Plugins portable manifest, used by Codex) + `.agents/plugins/marketplace.json` (same names)
 
-Both tools discover `skills/<name>/SKILL.md` at the plugin root, so there is one copy of the skill. It is **not**
+Both tools discover `skills/<name>/SKILL.md` at the plugin root, so there is one copy of the skill. `agents/` is
+Claude Code-only (Codex ignores it); SKILL.md carries a fallback sentence wherever it references the agent. It is **not**
 project-local to this repo (`.claude/skills/` is intentionally absent) — install it via the marketplace to use it.
 
-Validate / test: `claude plugin validate --strict .` checks both Claude manifests. For an end-to-end check,
+Validate / test: `scripts/check.sh` runs every invariant below plus `claude plugin validate --strict .` (both Claude
+manifests). For an end-to-end check,
 `claude plugin marketplace add <abs path>` → `claude plugin install refactoring@zeromountain` → `claude plugin details
 refactoring@zeromountain`, and `codex plugin marketplace add <abs path>` → `codex plugin add refactoring@zeromountain`
 → `codex plugin list`; both write to the user's global config, so uninstall and `marketplace remove zeromountain`
@@ -26,6 +29,14 @@ Everything is written in Korean with the canonical English technique name in par
 (e.g. `## 6.1 함수 추출하기 (Extract Function)`).
 
 ## Layout and how the pieces reference each other
+
+Outside the skill:
+
+- `agents/refactoring-verifier.md` — read-only subagent (Claude Code only) that takes a diff base and hunts for
+  lines that are not a pure move/rename/extract, classified by the `safety.md` grey-zone list. SKILL.md step 6
+  invokes it as `refactoring:refactoring-verifier`; Codex sessions do the same diff read themselves.
+- `scripts/check.sh` — the invariants below as a script (exit 1 lists every failure). `scripts/bump.sh <ver>` writes
+  the version to all three manifests and then runs check.sh.
 
 All paths below are under `skills/refactoring/`.
 
@@ -57,16 +68,50 @@ by position in that TOC.
 
 ## Evals
 
-`evals/` holds two `claude plugin eval` cases (`diagnose-plan`: plan-only request must produce the diagnosis
-report without edits; `two-hats`: refactor + feature request must be split into separate steps). Run with
-`claude plugin eval . --scaffold --allow-tools Edit Write --runs 1 --ablation none --no-publish` (each run is a real Sonnet session plus Haiku
-grading; results land in `evals/results/`, which is git-ignored). `--scaffold` is required: each case's
-`setup.sh` copies its `invoice.ts` sample into the run's working directory, and without it the agent
-finds no file and both cases fail. `--allow-tools Edit Write` is what makes `diagnose-plan`'s `no-edits`
-grader meaningful — the case grants Edit/Write so restraint is tested, not merely enforced by the sandbox.
-Each run is a real Sonnet session executed as you (~$0.30 for both cases); don't put it in a loop. Run them after any change to `SKILL.md`,
-`recipes.md`, `safety.md` or `judgment.md` — they are the only check that the wiring between those files
-actually changes behavior.
+`evals/` holds six `claude plugin eval` cases. Three are diagnosis-mode and need no Bash:
+
+- `diagnose-plan` — "계획 세워줘" alone must select 진단 mode: diagnosis report, zero Edit/Write.
+- `two-hats` — refactor + feature request must be split into separate steps.
+- `non-js` — Python fixture: must read `language-notes.md` and prescribe Python idioms, not JS class inheritance.
+
+Three are apply-mode and grant Bash so the agent can run `node --test` (each `setup.sh` also does `git init` +
+commit so steps 1 and 6 of the skill can run `git status`/`git diff`; the prompts say "커밋은 하지 마" because
+there is no user to answer step 1's commit question):
+
+- `technique-by-name` — "임시 변수를 질의 함수로" by name: must Read `catalog-encapsulation.md`, run tests ≥2×,
+  follow the 7.4 mechanics, keep the `basePrice` return key.
+- `no-tests` — fixture without tests: must Write a `*test*.js` before editing, deliberately break it, and freeze
+  (not fix) the unknown-region behavior.
+- `grey-zone-stop` — asked to remove a flag argument from a documented public API: must not touch `pricing.js`,
+  propose the 6.5 migration, and end by asking.
+
+Two commands (all three diagnosis cases carry the `diagnosis` tag; there is no exclude-tag flag):
+
+- local, diagnosis only: `claude plugin eval . --tag diagnosis --scaffold --allow-tools Edit Write --runs 1
+  --ablation none --no-publish`
+- full six (CI or a machine without Docker Desktop, see below): `claude plugin eval . --scaffold --allow-tools
+  Edit Write Bash --runs 1 --ablation none --no-publish --max-cost-usd 8`
+
+`--scaffold` is required (without it the agent finds no file). Granting Edit/Write to the
+diagnosis cases is what makes their `no-edits`/`no-writes` graders meaningful. Results land in `evals/results/`
+(git-ignored). Measured cost: ~$0.35–0.55 per diagnosis case, more for apply cases — expect $2.5–3 for all six;
+each run is a real Sonnet session executed as you, so don't put it in a loop. The threshold is 1.0: one red
+grader fails the whole case, so read the grader breakdown before treating a red as a regression. First grader
+to suspect on a spurious red: `read-catalog` (agent `cat`ed the file via Bash instead of Read), `wrote-tests`
+(test file name without "test"), `tests-run` (agent ran a single file without the `--test` flag — the regex
+covers `.test.js` but not e.g. `node run.js`).
+
+**Bash-granting cases cannot run on a machine where `~/.docker` contains symlinks** (Docker Desktop's default
+`bin/` and `cli-plugins/` layout) — the eval sandbox refuses the Bash grant outright, and `DOCKER_CONFIG` does
+not bypass the check. Run the three apply cases in CI or on a machine without Docker Desktop; the three
+diagnosis cases run anywhere with `--allow-tools Edit Write`. As of 1.2.0 the apply cases have been written and
+their fixtures sanity-checked (`node --test` / `unittest` green locally) but **never executed end to end**, so
+their LLM graders and `max_turns` are uncalibrated — on the first run elsewhere, suspect the scaffold's
+`git init`/`git commit` inside the sandbox before suspecting the skill.
+
+Run the evals after any change to `SKILL.md`, `recipes.md`, `safety.md`, `judgment.md` or
+`agents/refactoring-verifier.md` — they are the only check that the wiring between those files actually
+changes behavior.
 
 ## Invariants to keep when editing
 
@@ -80,10 +125,12 @@ actually changes behavior.
   Fence language must match the example (`js` by default, `java` where the example is Java).
 - `SKILL.md` frontmatter `description` is single-quoted YAML (it contains double quotes); keep it that way.
 - Every `(N.M)` section reference in `recipes.md`, `safety.md`, `judgment.md`, `language-notes.md`,
-  `large-scale.md` and `SKILL.md` must resolve to a catalog heading (6.x–12.x) or a smell/principle section
+  `large-scale.md`, `SKILL.md` and `agents/*.md` must resolve to a catalog heading (6.x–12.x) or a smell/principle section
   (2.x–5.x). Recipes are named R1–R10; SKILL.md's diagnosis template cites them by that name.
 - `version` must be bumped in lockstep in three places: `plugin.json`, `.claude-plugin/plugin.json`, and the
-  plugin entry in `.claude-plugin/marketplace.json`. Users only receive updates when the version changes.
+  plugin entry in `.claude-plugin/marketplace.json` — use `scripts/bump.sh <ver>`. Users only receive updates
+  when the version changes; new files or features → minor bump, wording fixes → patch.
+- Commit-message template for refactoring commits is `refactor: <한국어 기법> (<English>) — <대상>`; it is stated
+  in `safety.md` 커밋 단위 and referenced from `recipes.md`, keep the two in sync.
 
-A quick way to check the invariants: grep `^## \d+\.\d+ ` across `skills/refactoring/references/catalog-*.md` and
-count 66, then confirm every `(\d+\.\d+)` in `skills/refactoring/references/smells.md` appears in that heading list.
+`scripts/check.sh` checks all of the above and exits 1 with every failure listed.

@@ -1,0 +1,13 @@
+schema_version: "1.1"
+name: no-tests
+description: "테스트가 없는 코드를 리팩터링하라고 하면 현재 동작을 고정하는 특성화 테스트를 먼저 쓰고, 버그로 보이는 동작도 고치지 않고 고정한다"
+tags: [apply, safety]
+plugins: ["../.."]
+runs: 1
+execution:
+  max_turns: 30
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill, Edit, Write, Bash]
+  prompt: "fees.js 리팩터링해줘. 커밋은 하지 마."
+context:
+  scaffold_script: setup.sh

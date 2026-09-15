@@ -37,6 +37,30 @@ Codex 공식 플러그인 디렉터리(앱 내 브라우저)에는 아직 셀프
 - **진단**: "리뷰해줘", "뭘 고쳐야 해?", "계획 세워줘" → 코드를 수정하지 않고 악취 보고서(위치·근거·기법 순서·위험)를 냅니다.
 - **적용**: "리팩터링해줘" → 테스트 확인 → 악취 진단 → 레시피 선택 → 절차 한 단계 + 매번 테스트 순서로 진행하고, 리팩터링과 기능 변경을 한 커밋에 섞지 않습니다.
 
+인수로 모드와 기법을 지정할 수도 있습니다: `/refactoring 진단 src/pricing.ts`, `/refactoring 적용 7.4 src/pricing.ts`.
+
+### 검증 에이전트 (Claude Code 전용)
+
+적용 모드가 끝나면 스킬은 `refactoring:refactoring-verifier` 서브에이전트에 diff 기준(시작 커밋 또는 "작업 트리")을 넘겨 독립 검증을 받습니다. 이 에이전트는 읽기 전용이며, 순수 이동·이름 변경·추출로 설명되지 않는 줄을 찾아 평가 순서·부동소수점·예외 타입·공개 API 같은 회색 지대로 분류해 표로 돌려줍니다. Codex에는 서브에이전트가 없어 스킬이 같은 점검을 스스로 합니다.
+
+### 편집 후 테스트 자동 실행 (선택, Claude Code)
+
+플러그인은 훅을 싣지 않습니다 — 테스트 명령이 프로젝트마다 달라서입니다. 편집마다 테스트를 돌리고 싶으면 프로젝트의 `.claude/settings.json`에 직접 거세요.
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      { "matcher": "Edit|Write",
+        "hooks": [{ "type": "command",
+                    "command": "npm test --silent >/dev/null 2>&1 || { npm test 2>&1 | tail -20 >&2; exit 2; }" }] }
+    ]
+  }
+}
+```
+
+훅은 종료 코드 2로 끝나야 stderr 가 에이전트에게 전달됩니다 — 통과하면 조용히 0, 실패하면 마지막 20줄을 stderr 로 보내고 2로 끝나는 구조입니다.
+
 ## 저장소 구조
 
 ```
@@ -45,13 +69,21 @@ plugin.json                       Codex 플러그인 매니페스트 (Agent Plug
 .claude-plugin/plugin.json        Claude Code 플러그인 매니페스트
 .claude-plugin/marketplace.json   Claude Code 마켓플레이스 (플러그인 소스 = 저장소 루트)
 skills/refactoring/SKILL.md       스킬 진입점
-skills/refactoring/references/    원칙 · 악취 · 기법 카탈로그 (장별 파일)
+skills/refactoring/references/    원칙 · 악취 · 기법 카탈로그 (장별 파일) · 레시피 · 안전 · 판단 · 언어 노트
+agents/refactoring-verifier.md    diff 독립 검증 서브에이전트 (Claude Code 전용)
+scripts/check.sh, bump.sh         불변식 검사 · 버전 일괄 갱신
+evals/                            claude plugin eval 케이스 6개
 ```
 
 ## 검증
 
-`evals/`에 `claude plugin eval` 케이스 두 개가 있습니다(계획만 요청 → 수정 없이 진단 보고서, 리팩터링+기능 요청 → 두 단계로 분리).
-`claude plugin eval . --scaffold --allow-tools Edit Write --runs 1 --ablation none --no-publish` 로 실행합니다.
+`scripts/check.sh` 가 문서 불변식(기법 66개, 절 번호 참조, 버전 일치, 매니페스트)을 검사합니다.
+
+`evals/`에 `claude plugin eval` 케이스 여섯 개가 있습니다 — 진단 모드 3개(계획만 요청, 리팩터링+기능 분리, Python 관용)와 적용 모드 3개(기법 이름 지목, 테스트 없는 코드, 공개 API 회색 지대).
+- 진단 모드 3개만 (어디서나): `claude plugin eval . --tag diagnosis --scaffold --allow-tools Edit Write --runs 1 --ablation none --no-publish`
+- 전체 6개: `claude plugin eval . --scaffold --allow-tools Edit Write Bash --runs 1 --ablation none --no-publish --max-cost-usd 8`
+
+적용 모드 케이스는 Bash 권한이 필요한데, `~/.docker` 안에 심링크가 있는 머신(Docker Desktop 기본 배치)에서는 eval 샌드박스가 Bash 권한을 거부하므로 Docker Desktop 이 없는 머신이나 CI 에서 돌려야 합니다.
 
 ## 출처
 

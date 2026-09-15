@@ -1,0 +1,13 @@
+schema_version: "1.1"
+name: non-js
+description: "JS 이외 언어(Python)에서는 language-notes 의 대응표를 읽고, 책의 JS 예시(클래스 상속)를 그대로 옮기지 않고 그 언어의 관용으로 처방한다"
+tags: [diagnosis, language]
+plugins: ["../.."]
+runs: 1
+execution:
+  max_turns: 15
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill, Edit, Write]
+  prompt: "invoice.py 리팩터링 계획 세워줘. 테스트는 python3 -m unittest 로 돌아가."
+context:
+  scaffold_script: setup.sh

@@ -1,0 +1,13 @@
+schema_version: "1.1"
+name: technique-by-name
+description: "기법을 이름으로 지목하면 카탈로그의 그 절차(7.4 임시 변수를 질의 함수로 바꾸기)를 읽고, 한 단계마다 테스트를 돌리며 적용한다"
+tags: [apply, catalog]
+plugins: ["../.."]
+runs: 1
+execution:
+  max_turns: 30
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill, Edit, Write, Bash]
+  prompt: "report.js 의 basePrice 임시 변수를 질의 함수로 바꿔줘. 커밋은 하지 마."
+context:
+  scaffold_script: setup.sh

@@ -1,7 +1,7 @@
 schema_version: "1.1"
 name: two-hats
 description: "리팩터링과 기능 추가를 한 번에 요청받으면 두 모자를 분리해 순서를 제안하고, 리팩터링 단계에는 기능을 섞지 않는다"
-tags: [principles]
+tags: [principles, diagnosis]
 plugins: ["../.."]
 runs: 1
 execution:
