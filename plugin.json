@@ -1,7 +1,6 @@
 {
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "refactoring",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "마틴 파울러 『리팩터링 2판』 기반 리팩터링 스킬 — 원칙, 24개 악취와 처방, 66개 기법 카탈로그(배경·절차·예시)",
   "author": {
     "name": "zeromountain",
@@ -10,15 +9,5 @@
   "homepage": "https://github.com/zeromountain/refactoring",
   "repository": "https://github.com/zeromountain/refactoring",
   "license": "MIT",
-  "keywords": ["refactoring", "code-smell", "fowler", "clean-code", "리팩터링"],
-  "extensions": {
-    "com.openai": {
-      "interface": {
-        "displayName": "Refactoring (Fowler 2nd ed.)",
-        "shortDescription": "『리팩터링 2판』의 악취 진단과 66개 기법 절차로 동작 변경 없이 코드를 개선",
-        "developerName": "zeromountain",
-        "category": "Development"
-      }
-    }
-  }
+  "keywords": ["refactoring", "code-smell", "fowler", "clean-code", "리팩터링"]
 }

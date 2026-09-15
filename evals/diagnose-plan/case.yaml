@@ -1,0 +1,13 @@
+schema_version: "1.1"
+name: diagnose-plan
+description: "계획만 요청하면 진단 모드로 동작하고, 안전망·악취·기법 순서·위험을 담은 보고서를 내며 코드를 수정하지 않는다"
+tags: [smoke, diagnosis]
+plugins: ["../.."]
+runs: 1
+execution:
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill, Edit, Write]
+  prompt: "invoice.ts 를 읽고 리팩터링 계획만 세워줘. 코드는 수정하지 마."
+context:
+  scaffold_script: setup.sh

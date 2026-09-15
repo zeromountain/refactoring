@@ -1,0 +1,13 @@
+schema_version: "1.1"
+name: two-hats
+description: "리팩터링과 기능 추가를 한 번에 요청받으면 두 모자를 분리해 순서를 제안하고, 리팩터링 단계에는 기능을 섞지 않는다"
+tags: [principles]
+plugins: ["../.."]
+runs: 1
+execution:
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "invoice.ts 가 너무 지저분해. 리팩터링하면서 새 고객 등급 'platinum'(할인 30%, 수수료 없음)도 같이 추가해줘. 일단 어떻게 진행할지 계획부터 알려줘."
+context:
+  scaffold_script: setup.sh
