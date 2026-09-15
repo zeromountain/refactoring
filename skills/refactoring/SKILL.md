@@ -27,7 +27,7 @@ description: '마틴 파울러 『리팩터링 2판』의 원칙·악취·66개 
 6. **성능은 나중에** — 명확한 구조 먼저. 느려지면 측정해서 핫스팟만.
 7. **이름이 최우선** — "어떻게"가 아니라 "무엇을/왜". 좋은 이름이 안 떠오르면 추출하지 않는다.
 8. **도구를 쓴다** — 언어 서버의 rename/extract가 있으면 텍스트 치환 대신 그것을.
-9. **언어 관용을 따른다** — 책의 JS 예시를 그대로 옮기지 말고 `language-notes.md`의 대응표로(Go의 오류 값, Rust의 enum+match, Kotlin sealed class …).
+9. **언어 관용을 따른다** — 책의 JS 예시를 그대로 옮기지 말고 `references/language-notes.md`의 대응표로(Go의 오류 값, Rust의 enum+match, Kotlin sealed class …).
 
 ## 적용 절차 (체크리스트)
 

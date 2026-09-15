@@ -4,7 +4,7 @@
 **어디서 커밋하는지**를 안다. 아래는 자주 만나는 상황별 표준 연쇄다. 번호는 카탈로그 절.
 
 공통 규칙
-- 각 화살표(→)마다 테스트를 돌리고, 초록이면 커밋할 수 있는 지점이다. 커밋 메시지에 기법 이름을 적는다(`refactor: 함수 추출 — calculateTotal`).
+- 각 화살표(→)마다 테스트를 돌리고, 초록이면 커밋할 수 있는 지점이다. 커밋은 사용자가 원할 때만 하며(safety.md 커밋 단위), 하지 않으면 그 지점을 단계 경계로 보고서에 적는다. 커밋 메시지에는 기법 이름을 적는다(`refactor: 함수 추출 — calculateTotal`).
 - 연쇄 앞부분은 대개 **"풀어주는" 기법**(이름 바꾸기·문장 슬라이드·변수 추출·함수 추출)이다. 뒤의 큰 기법을 가능하게 만드는 준비 단계이므로 건너뛰지 않는다.
 - 연쇄 도중 멈춰도 코드는 이전보다 나아야 한다. 그렇지 않은 순서는 잘못된 순서다.
 
@@ -125,6 +125,8 @@
 
 ## 처음부터 끝까지: 영수증 출력 함수 (R1 → R3 → R2)
 
+아래의 "커밋 N"은 검증이 끝난 단계 경계다. 사용자가 커밋을 원하지 않으면 커밋 없이 같은 단계로 진행한다.
+
 원본. 한 함수가 파싱·계산·포맷팅을 다 하고, 고객 등급 분기가 두 군데 반복된다.
 
 ```js
@@ -198,9 +200,14 @@ class Pricing { discountRate() { return 1; } pointsFor(qty) { return Math.floor(
 class GoldPricing extends Pricing { discountRate() { return 0.9; } pointsFor(qty) { return Math.floor(qty * 2); } }
 class SilverPricing extends Pricing { discountRate() { return 0.95; } pointsFor(qty) { return qty; } }
 function createPricing(tier) {
-  return { gold: new GoldPricing(), silver: new SilverPricing() }[tier] ?? new Pricing();
+  switch (tier) {
+    case 'gold': return new GoldPricing();
+    case 'silver': return new SilverPricing();
+    default: return new Pricing();
+  }
 }
 ```
+팩터리는 `switch`로 쓴다. 객체 리터럴 조회(`{ gold: … }[tier] ?? new Pricing()`)는 `tier`가 `'constructor'`·`'toString'` 같은 값일 때 `Object.prototype`으로 빠져 원본 `if/else`와 동작이 달라진다 — 이 커밋의 요지는 "순수 이동이 아닌 줄이 없다"이므로 그런 줄을 만들지 않는다.
 
 **커밋 6 — 조건부 로직을 다형성으로(10.4).**
 ```js
