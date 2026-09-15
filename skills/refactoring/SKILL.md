@@ -15,6 +15,8 @@ description: '마틴 파울러 『리팩터링 2판』의 원칙·악취·66개 
 | **진단** | "리뷰해줘", "냄새 봐줘", "뭘 고쳐야 해?", "계획 세워줘", 범위가 크거나 불명확할 때 | 코드를 **수정하지 않고** 악취 보고서 + 기법 순서 + 위험을 낸다 (형식은 아래) |
 | **적용** | "리팩터링해줘", "이 함수 정리해", 기법 이름을 지목, 진단 후 승인 | 절차대로 한 단계씩 수정·검증·(커밋) |
 
+인수가 주어지면(`/refactoring 진단 src/x.ts`, `/refactoring 적용 7.4 src/x.ts`) `진단|적용 [절번호|기법명] [대상]`으로 읽고 모드를 추론하지 않는다. 인수: `$ARGUMENTS`
+
 범위가 함수~파일 하나이고 처방이 명백하면 바로 적용. 여러 파일·공개 API·상속 계층·스키마가 걸리면 **진단을 먼저 보여 주고** 승인 뒤 적용.
 
 ## 지켜야 할 원칙
@@ -33,7 +35,7 @@ description: '마틴 파울러 『리팩터링 2판』의 원칙·악취·66개 
 
 ```
 [ ] 0 범위     왜 하는가(준비/이해/쓰레기 줍기/계획)를 한 줄로. 요청 밖 코드는 건드리지 않는다.
-[ ] 1 안전망   git status 깨끗 → 테스트 명령 확인 → 초록 확인 → 일부러 깨뜨려 빨강 확인 → 되돌림.
+[ ] 1 안전망   git status 깨끗 → 커밋 여부 확인(기본: 안 함) → 테스트 명령 확인 → 초록 확인 → 일부러 깨뜨려 빨강 확인 → 되돌림.
               테스트 없음 → references/safety.md 의 특성화 테스트 절차.
 [ ] 2 진단     references/smells.md 로 악취 1~3개. 우선순위는 references/judgment.md.
 [ ] 3 계획     references/recipes.md 에서 연쇄를 고르고, 각 기법의 절차를 references/catalog-*.md 에서 읽는다.
@@ -53,7 +55,7 @@ description: '마틴 파울러 『리팩터링 2판』의 원칙·악취·66개 
 안전망: 테스트 <있음/없음/부분> · 명령 `<cmd>` · 마지막 실행 <초록/빨강>
 | # | 악취 | 위치 | 근거 (줄/증상) | 처방 (기법 순서) | 위험 |
 | 1 | 반복되는 switch | pricing.ts:40,88 | tier 분기 2곳 | R2: 팩터리 → 서브클래스 → 다형성 | 중 (생성 지점 3곳) |
-권장 순서와 이유 · 예상 커밋 수
+권장 순서와 이유 · 예상 단계 수(커밋 단위)
 손대지 않을 것: <이유와 함께>
 확인 필요: <회색 지대 항목>
 ```
@@ -90,6 +92,8 @@ description: '마틴 파울러 『리팩터링 2판』의 원칙·악취·66개 
 
 ## 참고 파일 (필요한 것만 읽는다)
 
+범위가 함수 하나이고 기법이 명백하면 `references/safety.md`의 시작 전 체크리스트와 해당 `catalog-*.md` 항목만 읽는다. recipes·judgment는 연쇄가 필요하거나 우선순위를 매길 때.
+
 | 파일 | 내용 | 읽는 시점 |
 |---|---|---|
 | `references/safety.md` | 시작 전 체크리스트, 특성화 테스트, 호출자 전부 찾기, 회색 지대, 커밋 단위 | 적용 모드 시작 전 |
@@ -100,13 +104,13 @@ description: '마틴 파울러 『리팩터링 2판』의 원칙·악취·66개 
 | `references/smells.md` | 3장 24개 악취의 정의·판단 기준·처방 + 부록 B | 진단 |
 | `references/principles.md` | 2장 원칙 · 4장 테스트 · 5장 카탈로그 형식 | 원칙을 설명해야 할 때 |
 | `references/catalog-index.md` | 부록 A: 66개 기법 한국어↔영어, 1판 이름, 반대 기법, 출처 | 이름 확인 |
-| `references/catalog-basic.md` | 6장 기본 11개 | 기법 적용 직전 |
-| `references/catalog-encapsulation.md` | 7장 캡슐화 9개 | " |
-| `references/catalog-moving-features.md` | 8장 기능 이동 9개 | " |
-| `references/catalog-organizing-data.md` | 9장 데이터 조직화 6개 | " |
-| `references/catalog-conditional-logic.md` | 10장 조건부 로직 7개 | " |
-| `references/catalog-apis.md` | 11장 API 13개 | " |
-| `references/catalog-inheritance.md` | 12장 상속 11개 | " |
+| `references/catalog-basic.md` | 6장 기본 11개 (6.1~6.11) | 기법 적용 직전 |
+| `references/catalog-encapsulation.md` | 7장 캡슐화 9개 (7.1~7.9) | " |
+| `references/catalog-moving-features.md` | 8장 기능 이동 9개 (8.1~8.9) | " |
+| `references/catalog-organizing-data.md` | 9장 데이터 조직화 6개 (9.1~9.6) | " |
+| `references/catalog-conditional-logic.md` | 10장 조건부 로직 7개 (10.1~10.7) | " |
+| `references/catalog-apis.md` | 11장 API 13개 (11.1~11.13) | " |
+| `references/catalog-inheritance.md` | 12장 상속 11개 (12.1~12.11) | " |
 
 ## 하지 말 것
 
