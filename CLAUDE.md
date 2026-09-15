@@ -4,14 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A single Claude Code skill, `refactoring`, living at `.claude/skills/refactoring/`. It encodes Martin Fowler's
-*Refactoring* (2nd ed.; Korean translation 『리팩터링 2판』, 한빛미디어) so Claude can refactor code the way the
+A plugin containing one skill, `refactoring`, at `skills/refactoring/`. It encodes Martin Fowler's
+*Refactoring* (2nd ed.; Korean translation 『리팩터링 2판』, 한빛미디어) so an agent can refactor code the way the
 book prescribes. There is no application code, build, lint, or test suite — the deliverable is the Markdown itself.
+
+The repo root is simultaneously the plugin root and a marketplace for both Claude Code and Codex:
+
+- `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json` (marketplace `zeromountain`, plugin source `./`)
+- `plugin.json` (Agent Plugins portable manifest, used by Codex) + `.agents/plugins/marketplace.json` (same names)
+
+Both tools discover `skills/<name>/SKILL.md` at the plugin root, so there is one copy of the skill. It is **not**
+project-local to this repo (`.claude/skills/` is intentionally absent) — install it via the marketplace to use it.
+
+Validate / test: `claude plugin validate --strict .` checks both Claude manifests. For an end-to-end check,
+`claude plugin marketplace add <abs path>` → `claude plugin install refactoring@zeromountain` → `claude plugin details
+refactoring@zeromountain`, and `codex plugin marketplace add <abs path>` → `codex plugin add refactoring@zeromountain`
+→ `codex plugin list`; both write to the user's global config, so uninstall and `marketplace remove zeromountain`
+afterwards.
 
 Everything is written in Korean with the canonical English technique name in parentheses
 (e.g. `## 6.1 함수 추출하기 (Extract Function)`).
 
 ## Layout and how the pieces reference each other
+
+All paths below are under `skills/refactoring/`.
 
 - `SKILL.md` — entry point loaded on trigger. Kept lean (~100 lines): principles, the agent workflow,
   the smell→technique quick table, the file map, prohibitions, report format. Technique detail is *not* here.
@@ -38,6 +54,8 @@ by position in that TOC.
 - Mechanics summarize the book in our own words; example code is short and original (not book text).
   Fence language must match the example (`js` by default, `java` where the example is Java).
 - `SKILL.md` frontmatter `description` is single-quoted YAML (it contains double quotes); keep it that way.
+- `version` must be bumped in lockstep in three places: `plugin.json`, `.claude-plugin/plugin.json`, and the
+  plugin entry in `.claude-plugin/marketplace.json`. Users only receive updates when the version changes.
 
-A quick way to check the invariants: grep `^## \d+\.\d+ ` across `references/catalog-*.md` and count 66, then
-confirm every `(\d+\.\d+)` in `references/smells.md` appears in that heading list.
+A quick way to check the invariants: grep `^## \d+\.\d+ ` across `skills/refactoring/references/catalog-*.md` and
+count 66, then confirm every `(\d+\.\d+)` in `skills/refactoring/references/smells.md` appears in that heading list.
